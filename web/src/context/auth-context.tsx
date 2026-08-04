@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   authenticateUser,
+  getCurrentUser,
   registerBuyer as registerBuyerRequest,
   registerSeller as registerSellerRequest,
 } from "@/services/auth-service";
@@ -20,6 +21,7 @@ import type {
   LoginRequest,
   SellerRegistrationRequest,
   SellerRegistrationResponse,
+  CurrentUserResponse,
 } from "@/types/auth";
 import {
   clearAuthSession,
@@ -29,6 +31,7 @@ import {
   saveAuthSession,
   serverAuthSnapshot,
   subscribeToAuthStorage,
+  updateStoredAuthUser,
 } from "@/utils/auth-storage";
 
 
@@ -42,6 +45,7 @@ interface AuthContextValue {
   registerSeller: (
     registration: SellerRegistrationRequest,
   ) => Promise<SellerRegistrationResponse>;
+  refreshUser: () => Promise<CurrentUserResponse>;
   logout: () => void;
 }
 
@@ -86,6 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const refreshUser = useCallback(async () => {
+    const currentUser = await getCurrentUser();
+    updateStoredAuthUser(currentUser);
+    return currentUser;
+  }, []);
+
   const logout = useCallback(() => {
     clearAuthSession();
     router.replace("/login");
@@ -100,9 +110,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       registerBuyer,
       registerSeller,
+      refreshUser,
       logout,
     }),
-    [session, snapshot, login, registerBuyer, registerSeller, logout],
+    [
+      session,
+      snapshot,
+      login,
+      registerBuyer,
+      registerSeller,
+      refreshUser,
+      logout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

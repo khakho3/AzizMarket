@@ -1,4 +1,8 @@
-import { ApiRequestError, apiRequest } from "@/services/api";
+import {
+  ApiRequestError,
+  apiRequest,
+  authenticatedApiRequest,
+} from "@/services/api";
 import type {
   AuthResponse,
   BuyerRegistrationRequest,
@@ -6,6 +10,7 @@ import type {
   LoginResponse,
   SellerRegistrationRequest,
   SellerRegistrationResponse,
+  CurrentUserResponse,
 } from "@/types/auth";
 
 function registrationError(
@@ -104,4 +109,8 @@ export async function registerSeller(
   } catch (error) {
     throw registrationError(error, "seller");
   }
+}
+
+export async function getCurrentUser(): Promise<CurrentUserResponse> {
+  return authenticatedApiRequest<CurrentUserResponse>("/auth/me");
 }

@@ -1,4 +1,5 @@
 import type { ApiError } from "@/types/auth";
+import { loadAuthSession } from "@/utils/auth-storage";
 
 
 export class ApiRequestError extends Error implements ApiError {
@@ -32,6 +33,7 @@ async function parseJsonSafely(response: Response): Promise<unknown> {
   try {
     return JSON.parse(body) as unknown;
   } catch {
+    if (!response.ok) return null;
     throw new ApiRequestError(
       response.status,
       "response",
@@ -45,7 +47,6 @@ function responseDetail(payload: unknown): string | null {
     return null;
   }
   const detail = payload.detail;
-  if (typeof detail === "string") return detail;
   if (!Array.isArray(detail)) return null;
 
   const fieldLabels: Record<string, string> = {
@@ -82,7 +83,12 @@ export async function apiRequest<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set("Content-Type", "application/json");
+  headers.set("Accept", "application/json");
+  if (options.body && !headers.has("Content-Type")) {
+    const isFormData =
+      typeof FormData !== "undefined" && options.body instanceof FormData;
+    if (!isFormData) headers.set("Content-Type", "application/json");
+  }
 
   let response: Response;
   try {
@@ -93,6 +99,7 @@ export async function apiRequest<T>(
     });
   } catch (error) {
     if (error instanceof ApiRequestError) throw error;
+    if (error instanceof Error && error.name === "AbortError") throw error;
     throw new ApiRequestError(
       0,
       "network",
@@ -109,4 +116,22 @@ export async function apiRequest<T>(
     );
   }
   return payload as T;
+}
+
+export async function authenticatedApiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const session = loadAuthSession();
+  if (!session?.accessToken) {
+    throw new ApiRequestError(
+      401,
+      "server",
+      "Your session has expired. Please log in again.",
+    );
+  }
+
+  const headers = new Headers(options.headers);
+  headers.set("Authorization", `Bearer ${session.accessToken}`);
+  return apiRequest<T>(path, { ...options, headers });
 }

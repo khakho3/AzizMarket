@@ -96,6 +96,18 @@ export function loadAuthSession(): StoredAuthSession | null {
   }
 }
 
+export function updateStoredAuthUser(user: AuthUser): void {
+  if (typeof window === "undefined") return;
+  const session = loadAuthSession();
+  if (!session) return;
+
+  const storage = session.rememberMe
+    ? window.localStorage
+    : window.sessionStorage;
+  storage.setItem(authStorageKeys.user, JSON.stringify(user));
+  notifyAuthChange();
+}
+
 export function clearAuthSession(): void {
   if (typeof window === "undefined") return;
   try {

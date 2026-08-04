@@ -66,6 +66,8 @@ export interface AuthUser {
   is_active: boolean;
   email_verified: boolean;
   created_at: string;
+  seller_profile?: SellerProfile | null;
+  store?: Store | null;
 }
 
 export interface AuthResponse {
@@ -81,6 +83,7 @@ export interface SellerProfile {
   id: string;
   verification_status: "pending" | "verified" | "rejected";
   account_status: "active" | "suspended" | "banned";
+  verification_reason: string | null;
   joined_at: string;
 }
 
@@ -100,6 +103,11 @@ export interface Store {
 export interface SellerRegistrationResponse extends AuthResponse {
   seller_profile: SellerProfile;
   store: Store;
+}
+
+export interface CurrentUserResponse extends AuthUser {
+  seller_profile: SellerProfile | null;
+  store: Store | null;
 }
 
 export type LoginResponse = AuthResponse;

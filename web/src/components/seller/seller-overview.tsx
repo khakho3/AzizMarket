@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { DashboardStatCard } from "@/components/seller/dashboard-stat-card";
 import { StatusBadge } from "@/components/seller/status-badge";
+import { SellerVerificationPanel } from "@/components/seller/seller-verification-panel";
 import { useProducts } from "@/context/product-context";
 import { useSeller } from "@/context/seller-context";
 import { currentSeller } from "@/data/current-seller";
@@ -47,6 +48,7 @@ export function SellerOverview({
         </div>
       </section>
     ) : null}
+    <SellerVerificationPanel />
     <div><p className="text-sm font-bold text-emerald-700">{currentSeller.storeName}</p><h1 className="mt-1 text-3xl font-black text-slate-950">Seller overview</h1><p className="mt-2 text-sm text-slate-500">Store performance and actions that need your attention.</p></div>
     <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map(([label, value]) => <DashboardStatCard key={label} label={label} value={value} />)}</div>
     <section className="mt-6 rounded-2xl bg-emerald-950 p-5 text-white"><div className="flex flex-wrap gap-3"><Link href="/seller/products/new" className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-black text-slate-950">Add Product</Link><Link href="/seller/orders" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold">View Orders</Link><Link href="/seller/store" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold">Update Store</Link><Link href="/seller/messages" className="rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold">View Messages</Link></div></section>
