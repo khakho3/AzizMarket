@@ -1,0 +1,223 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Inter", "Segoe UI", Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #fcd34d;
+  color: #052e2b;
+}
+
+.marketplace-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, rgb(6 95 70 / 0.8), transparent 38%),
+    #022c22;
+  color: white;
+  opacity: 1;
+  transition: opacity 500ms ease, visibility 500ms ease;
+}
+
+.marketplace-splash--leaving {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.marketplace-splash__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.marketplace-splash__mark {
+  position: relative;
+  display: grid;
+  width: 6rem;
+  height: 6rem;
+  place-items: center;
+  border-radius: 1.75rem;
+  background: #fbbf24;
+  color: #0f172a;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.3);
+  animation: marketplace-logo-arrive 800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.marketplace-splash__mark > span:first-child {
+  font-size: 3rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.marketplace-splash__orbit {
+  position: absolute;
+  inset: -0.65rem;
+  border: 2px solid rgb(251 191 36 / 0.35);
+  border-top-color: #fbbf24;
+  border-radius: 9999px;
+  animation: marketplace-orbit 1.4s linear infinite;
+}
+
+.marketplace-splash__name {
+  margin-top: 1.75rem;
+  font-size: clamp(2rem, 7vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  animation: marketplace-copy-arrive 700ms 250ms ease-out both;
+}
+
+.marketplace-splash__name span {
+  color: #fbbf24;
+}
+
+.marketplace-splash__tagline {
+  margin-top: 0.5rem;
+  color: #a7f3d0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  animation: marketplace-copy-arrive 700ms 400ms ease-out both;
+}
+
+.marketplace-splash__progress {
+  width: min(13rem, 62vw);
+  height: 0.25rem;
+  margin-top: 2.25rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.14);
+}
+
+.marketplace-splash__progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: #fbbf24;
+  transform-origin: left;
+  animation: marketplace-progress 3s linear both;
+}
+
+.marketplace-splash__glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(1px);
+  opacity: 0.18;
+}
+
+.marketplace-splash__glow--one {
+  top: -8rem;
+  right: -6rem;
+  width: 24rem;
+  height: 24rem;
+  background: #fbbf24;
+  animation: marketplace-float 3s ease-in-out infinite alternate;
+}
+
+.marketplace-splash__glow--two {
+  bottom: -10rem;
+  left: -7rem;
+  width: 28rem;
+  height: 28rem;
+  background: #10b981;
+  animation: marketplace-float 3s 400ms ease-in-out infinite alternate-reverse;
+}
+
+@keyframes marketplace-logo-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.55) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes marketplace-copy-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes marketplace-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes marketplace-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes marketplace-float {
+  to {
+    transform: translate3d(1.5rem, 1rem, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketplace-splash,
+  .marketplace-splash__mark,
+  .marketplace-splash__orbit,
+  .marketplace-splash__name,
+  .marketplace-splash__tagline,
+  .marketplace-splash__progress span,
+  .marketplace-splash__glow {
+    animation: none;
+    transition-duration: 100ms;
+  }
+}

@@ -1,0 +1,47 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { ConfirmationModal } from "@/components/orders/confirmation-modal";
+import { OrderTimeline } from "@/components/orders/order-timeline";
+import { StatusBadge } from "@/components/seller/status-badge";
+import { currentSeller } from "@/data/current-seller";
+import { useOrders } from "@/hooks/use-orders";
+import type { DeliveryStatus, OrderStatus } from "@/types";
+import { formatCurrency } from "@/utils/format-currency";
+
+const actionMap: Partial<Record<OrderStatus, { label: string; status: OrderStatus; delivery?: DeliveryStatus }>> = {
+  "Order Placed": { label: "Accept Order", status: "Seller Accepted" },
+  "Payment Confirmed": { label: "Accept Order", status: "Seller Accepted" },
+  "Seller Accepted": { label: "Mark as Preparing", status: "Preparing Order", delivery: "Preparing" },
+  "Preparing Order": { label: "Mark as Ready for Delivery", status: "Ready for Delivery", delivery: "Ready for Dispatch" },
+  "Ready for Delivery": { label: "Mark as Out for Delivery", status: "Out for Delivery", delivery: "In Transit" },
+  "Out for Delivery": { label: "Mark as Delivered", status: "Delivered", delivery: "Delivered" },
+};
+
+export function SellerOrderDetails({ id }: { id: string }) {
+  const { orders, updateOrder } = useOrders();
+  const [confirmAction, setConfirmAction] = useState<{ label: string; status: OrderStatus; delivery?: DeliveryStatus } | null>(null);
+  const [notice, setNotice] = useState("");
+  const [tracking, setTracking] = useState("");
+  const order = orders.find((item) => item.id === id && item.items.some((orderItem) => orderItem.sellerId === currentSeller.id));
+  if (!order) return <div className="rounded-2xl bg-white p-12 text-center"><h1 className="text-2xl font-black">Order not found</h1><Link href="/seller/orders" className="mt-5 inline-flex rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white">Back to orders</Link></div>;
+  const items = order.items.filter((item) => item.sellerId === currentSeller.id);
+  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const commission = subtotal * 0.1;
+  const earnings = subtotal - commission;
+  const nextAction = actionMap[order.status];
+  const canProcess = ["Paid", "Partially Paid", "Pay on Delivery"].includes(order.paymentStatus) || ["Pre-order", "Payment on Delivery"].includes(order.paymentAgreement);
+  function askAction(action: { label: string; status: OrderStatus; delivery?: DeliveryStatus }) {
+    if (action.status === "Preparing Order" && !canProcess) { setNotice("This order cannot be prepared until payment is confirmed for its payment agreement."); return; }
+    setConfirmAction(action);
+  }
+  function applyAction() {
+    if (!order || !confirmAction) return;
+    const now = new Date().toISOString();
+    updateOrder(order.id, { status: confirmAction.status, deliveryStatus: confirmAction.delivery ?? order.deliveryStatus, trackingNumber: tracking || order.trackingNumber, timeline: [...(order.timeline ?? []), { status: confirmAction.status, description: `${confirmAction.label} by ${currentSeller.storeName}.`, createdAt: now, actor: "Seller" }] });
+    setConfirmAction(null); setNotice("Order status updated. Buyers can see the change immediately.");
+  }
+  return <><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><Link href="/seller/orders" className="text-sm font-bold text-emerald-700">← Seller orders</Link><h1 className="mt-3 text-3xl font-black">{order.id}</h1><p className="mt-2 text-sm text-slate-500">Placed {new Date(order.createdAt).toLocaleString("en-GH")}</p></div><div className="flex flex-wrap gap-2"><StatusBadge status={order.status} /><StatusBadge status={order.paymentStatus} /><StatusBadge status={order.deliveryStatus} /></div></div>{notice ? <div role="status" className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">{notice}</div> : null}<div className="mt-6 grid gap-6 xl:grid-cols-[1fr_23rem]"><div className="space-y-6"><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white"><h2 className="border-b border-slate-200 p-5 font-black">Your products in this order</h2>{items.map((item) => <div key={item.productId} className="flex gap-4 p-5"><div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-slate-100"><Image src={item.productImage} alt="" fill sizes="80px" className="object-cover" /></div><div className="flex-1"><p className="font-black">{item.productName}</p><p className="mt-2 text-sm text-slate-500">Quantity {item.quantity} · {formatCurrency(item.unitPrice)} each</p></div><p className="font-black">{formatCurrency(item.unitPrice * item.quantity)}</p></div>)}</section><div className="grid gap-6 lg:grid-cols-2"><section className="rounded-2xl border border-slate-200 bg-white p-5"><h2 className="font-black">Buyer information</h2><p className="mt-4 text-sm font-bold">{order.buyer.fullName}</p><p className="mt-1 text-sm text-slate-500">{order.buyer.email}<br />{order.buyer.phone}</p><button type="button" className="mt-4 rounded-xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">Contact Buyer</button></section><section className="rounded-2xl border border-slate-200 bg-white p-5"><h2 className="font-black">Delivery address</h2><p className="mt-4 text-sm leading-6 text-slate-600">{order.deliveryAddress.street}<br />{order.deliveryAddress.area}, {order.deliveryAddress.city}<br />{order.deliveryAddress.region}</p>{order.deliveryAddress.instructions ? <p className="mt-2 text-xs italic text-slate-400">{order.deliveryAddress.instructions}</p> : null}</section></div><section className="rounded-2xl border border-slate-200 bg-white p-5"><h2 className="font-black">Order timeline</h2><div className="mt-5"><OrderTimeline status={order.status} createdAt={order.createdAt} /></div>{order.timeline?.length ? <div className="mt-5 border-t border-slate-100 pt-4"><h3 className="text-sm font-black">Saved updates</h3>{order.timeline.map((update, index) => <p key={`${update.createdAt}-${index}`} className="mt-2 text-xs text-slate-500">{new Date(update.createdAt).toLocaleString("en-GH")} · {update.description}</p>)}</div> : null}</section></div><aside className="space-y-5"><section className="rounded-2xl border border-slate-200 bg-white p-5"><h2 className="font-black">Seller earnings</h2><dl className="mt-4 space-y-3 text-sm"><div className="flex justify-between"><dt className="text-slate-500">Product subtotal</dt><dd>{formatCurrency(subtotal)}</dd></div><div className="flex justify-between"><dt className="text-slate-500">Delivery fee</dt><dd>{formatCurrency(order.deliveryFee)}</dd></div><div className="flex justify-between"><dt className="text-slate-500">Platform commission</dt><dd>-{formatCurrency(commission)}</dd></div><div className="flex justify-between border-t pt-3 font-black"><dt>Seller earnings</dt><dd className="text-emerald-700">{formatCurrency(earnings)}</dd></div></dl><div className="mt-5 rounded-xl bg-slate-50 p-4 text-xs"><p>Agreement: <b>{order.paymentAgreement}</b></p><p className="mt-2">Method: <b>{order.paymentMethod}</b></p><p className="mt-2">Paid: <b>{formatCurrency(order.amountPaid)}</b></p><p className="mt-2">Balance: <b>{formatCurrency(order.remainingBalance)}</b></p></div></section><section className="rounded-2xl border border-slate-200 bg-white p-5"><h2 className="font-black">Order actions</h2>{order.status === "Ready for Delivery" ? <label className="mt-4 block text-xs font-bold">Tracking number<input value={tracking} onChange={(event) => setTracking(event.target.value)} placeholder="AZM-GH-..." className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" /></label> : null}<div className="mt-4 grid gap-2">{nextAction ? <button type="button" onClick={() => askAction(nextAction)} className="rounded-xl bg-emerald-700 px-4 py-3 text-sm font-black text-white">{nextAction.label}</button> : null}{["Order Placed", "Payment Pending"].includes(order.status) ? <button type="button" onClick={() => askAction({ label: "Reject Order", status: "Cancelled", delivery: "Cancelled" })} className="rounded-xl border border-rose-200 px-4 py-3 text-sm font-bold text-rose-700">Reject Order</button> : null}<button type="button" onClick={() => { updateOrder(order.id, { status: "Disputed", timeline: [...(order.timeline ?? []), { status: "Disputed", description: "The seller reported a problem.", createdAt: new Date().toISOString(), actor: "Seller" }] }); setNotice("Problem reported for review."); }} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold">Report a Problem</button></div></section><section className="rounded-2xl border border-slate-200 bg-white p-5 text-sm"><h2 className="font-black">Tracking and notes</h2><p className="mt-3 text-slate-500">Tracking: <b className="text-slate-800">{order.trackingNumber ?? "Not assigned"}</b></p><p className="mt-2 text-slate-500">Notes: {order.notes ?? "No seller notes."}</p></section></aside></div><ConfirmationModal isOpen={Boolean(confirmAction)} title={`${confirmAction?.label}?`} description="This changes the shared order state in localStorage. The buyer order page will display the new status immediately." confirmLabel={confirmAction?.label ?? "Confirm"} onClose={() => setConfirmAction(null)} onConfirm={applyAction} /></>;
+}
